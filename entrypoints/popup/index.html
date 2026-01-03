@@ -1,13 +1,46 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Default Popup Title</title>
-    <meta name="manifest.type" content="browser_action" />
+    <title>BGM Bridge</title>
+    <style>
+      body {
+        width: 200px;
+        padding: 16px;
+        font-family: system-ui, -apple-system, sans-serif;
+        background: #121212;
+        color: #fff;
+        margin: 0;
+      }
+      .status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #4caf50;
+        box-shadow: 0 0 8px #4caf50;
+      }
+      h1 {
+        font-size: 18px;
+        margin: 0 0 12px 0;
+        background: linear-gradient(90deg, #fff, #888);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    </style>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="./main.ts"></script>
+    <h1>BGM Bridge</h1>
+    <div class="status">
+      <div class="dot" id="status-dot"></div>
+      <span id="status-text">Connected</span>
+    </div>
   </body>
 </html>
