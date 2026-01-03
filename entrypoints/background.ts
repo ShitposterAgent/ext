@@ -13,6 +13,15 @@ export default defineBackground(() => {
     }
   });
 
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'inject-request') {
+      bridge.inject(message.tabId, message.script)
+        .then(() => sendResponse({ success: true }))
+        .catch((err) => sendResponse({ success: false, error: err.message }));
+      return true; // Keep channel open for async response
+    }
+  });
+
   const updateTabs = async () => {
     const tabs = await chrome.tabs.query({});
     bridge.sendMessage({

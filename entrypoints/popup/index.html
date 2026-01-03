@@ -1,46 +1,241 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>BGM Bridge</title>
-    <style>
-      body {
-        width: 200px;
-        padding: 16px;
-        font-family: system-ui, -apple-system, sans-serif;
-        background: #121212;
-        color: #fff;
-        margin: 0;
-      }
-      .status {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 14px;
-        font-weight: 600;
-      }
-      .dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        background: #4caf50;
-        box-shadow: 0 0 8px #4caf50;
-      }
-      h1 {
-        font-size: 18px;
-        margin: 0 0 12px 0;
-        background: linear-gradient(90deg, #fff, #888);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-    </style>
-  </head>
-  <body>
-    <h1>BGM Bridge</h1>
-    <div class="status">
-      <div class="dot" id="status-dot"></div>
-      <span id="status-text">Connected</span>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BGM God-Mode</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0b;
+      --card: #16161a;
+      --accent: #5865f2;
+      --accent-glow: rgba(88, 101, 242, 0.4);
+      --text: #ffffff;
+      --text-dim: #a0a0a8;
+      --border: #2d2d33;
+    }
+
+    body {
+      width: 380px;
+      min-height: 400px;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .header {
+      padding: 20px;
+      background: linear-gradient(to bottom, #1a1a1f, var(--bg));
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 24px;
+      height: 24px;
+      background: var(--accent);
+      border-radius: 6px;
+      box-shadow: 0 0 15px var(--accent-glow);
+    }
+
+    .logo h1 {
+      font-size: 18px;
+      margin: 0;
+      letter-spacing: -0.5px;
+      font-weight: 600;
+    }
+
+    .status-pill {
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: #1e1e24;
+      font-size: 12px;
+      color: #4caf50;
+      font-weight: 600;
+      border: 1px solid rgba(76, 175, 80, 0.2);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #4caf50;
+      box-shadow: 0 0 8px #4caf50;
+    }
+
+    .content {
+      padding: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+      font-weight: 700;
+    }
+
+    .editor-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: #8be9fd;
+      font-family: 'JetBrains Mono', monospace;
+      padding: 12px;
+      font-size: 13px;
+      resize: none;
+      box-sizing: border-box;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      padding: 10px 16px;
+      border-radius: 8px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+      box-shadow: 0 4px 15px var(--accent-glow);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px var(--accent-glow);
+    }
+
+    .btn-secondary {
+      background: #2d2d33;
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #3d3d45;
+    }
+
+    .script-library {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+
+    .script-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.1s;
+    }
+
+    .script-item:hover {
+      border-color: #444;
+      transform: scale(1.02);
+    }
+
+    .script-name {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .script-tag {
+      font-size: 10px;
+      background: rgba(88, 101, 242, 0.1);
+      color: var(--accent);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(88, 101, 242, 0.2);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <div class="logo">
+      <div class="logo-icon"></div>
+      <h1>BGM God-Mode</h1>
     </div>
-  </body>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      <span>Controller Online</span>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="editor-section">
+      <div class="section-title">Quick Inject</div>
+      <div class="editor-container">
+        <textarea id="script-input" placeholder="console.log('Hello from BGM');"></textarea>
+        <div class="button-group">
+          <button id="inject-btn" class="btn-primary">Inject Script</button>
+          <button id="clear-btn" class="btn-secondary">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="library-section">
+      <div class="section-title">Script Library</div>
+      <div id="script-library" class="script-library">
+        <!-- Scripts will be injected here -->
+      </div>
+    </div>
+  </div>
+  <script type="module" src="./main.ts"></script>
+</body>
+
 </html>
