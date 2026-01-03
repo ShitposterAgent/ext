@@ -23,8 +23,6 @@
     }
 
     body {
-      width: 400px;
-      min-height: 500px;
       margin: 0;
       padding: 0;
       background: var(--bg);
@@ -32,7 +30,16 @@
       font-family: 'Outfit', sans-serif;
       display: flex;
       flex-direction: column;
+      min-height: 100vh;
       overflow-x: hidden;
+    }
+
+    /* Standard Popup Size (Fallback) */
+    @media (max-width: 450px) {
+      body {
+        width: 400px;
+        min-height: 550px;
+      }
     }
 
     .header {
@@ -107,12 +114,28 @@
       color: var(--text);
     }
 
+    .header-content {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
     .content {
-      padding: 20px;
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      overflow-y: auto;
+      padding-bottom: 70px;
+    }
+
+    .container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      box-sizing: border-box;
     }
 
     .section {
@@ -162,6 +185,13 @@
       transition: border-color 0.2s;
     }
 
+    @media (min-width: 768px) {
+      textarea {
+        height: 350px;
+        font-size: 14px;
+      }
+    }
+
     textarea:focus {
       border-color: var(--accent);
       outline: none;
@@ -205,16 +235,21 @@
     }
 
     .script-library {
-      display: flex;
-      gap: 10px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-      scrollbar-width: none;
-      /* Firefox */
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
 
-    .script-library::-webkit-scrollbar {
-      display: none;
+    @media (min-width: 768px) {
+      .script-library {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .script-library {
+        grid-template-columns: repeat(4, 1fr);
+      }
     }
 
     .script-card {
@@ -233,6 +268,7 @@
     .script-card:hover {
       border-color: var(--accent);
       background: #1e1e24;
+      transform: translateY(-2px);
     }
 
     .script-name {
@@ -246,11 +282,20 @@
     }
 
     .tabs-list {
-      max-height: 150px;
+      max-height: 250px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 6px;
+    }
+
+    @media (min-width: 768px) {
+      .tabs-list {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        max-height: none;
+      }
     }
 
     .tab-item {
@@ -278,22 +323,14 @@
       max-width: 200px;
     }
 
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      padding-bottom: 70px;
-      /* Space for bottom nav */
-      display: flex;
-      flex-direction: column;
-    }
 
     .tab-view {
-      display: none;
+      display: none !important;
       padding: 20px;
     }
 
     .tab-view.active {
-      display: flex;
+      display: flex !important;
       flex-direction: column;
       gap: 16px;
     }
@@ -334,91 +371,123 @@
       color: var(--accent);
     }
 
-    .nav-label {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
+    @media (min-width: 768px) {
+      .bottom-nav {
+        top: 0;
+        bottom: auto;
+        left: 50%;
+        transform: translateX(-50%);
+        width: auto;
+        max-width: fit-content;
+        height: 60px;
+        background: transparent;
+        border-top: none;
+        backdrop-filter: none;
+        gap: 30px;
+        box-shadow: none;
+      }
+
+      .nav-item {
+        flex: none;
+        flex-direction: row;
+        gap: 8px;
+        padding: 6px 16px !important;
+        border-radius: 8px;
+      }
+
+      .nav-item.active {
+        background: rgba(88, 101, 242, 0.15);
+      }
+
+      .nav-label {
+        font-size: 13px !important;
+      }
     }
   </style>
 </head>
 
 <body>
   <div class="header">
-    <div class="logo">
-      <div class="logo-icon"></div>
-      <h1>BGM God-Mode</h1>
-    </div>
-    <div style="display: flex; gap: 10px; align-items: center;">
-      <button id="popout-btn" class="icon-btn" title="Open in Window">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-          stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-          <polyline points="15 3 21 3 21 9"></polyline>
-          <line x1="10" y1="14" x2="21" y2="3"></line>
-        </svg>
-      </button>
-      <div class="status-pill">
-        <div class="status-dot"></div>
-        <span>Network Connected</span>
+    <div class="header-content">
+      <div class="logo">
+        <div class="logo-icon"></div>
+        <h1>BGM God-Mode</h1>
+      </div>
+
+      <div style="display: flex; gap: 15px; align-items: center;">
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button id="popout-btn" class="icon-btn" title="Open in Tab">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+          </button>
+          <div class="status-pill">
+            <div class="status-dot"></div>
+            <span>Network Connected</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="content">
-    <div id="tab-orchestra" class="tab-view active">
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Active Tabs</div>
-          <select id="tab-select" class="tab-selector">
-            <option value="active">Current Active Tab</option>
-            <option value="all">All Available Tabs</option>
-          </select>
+    <div class="container">
+      <div id="tab-orchestra" class="tab-view active">
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Active Tabs</div>
+            <select id="tab-select" class="tab-selector">
+              <option value="active">Current Active Tab</option>
+              <option value="all">All Available Tabs</option>
+            </select>
+          </div>
+          <div id="tabs-preview" class="tabs-list">
+            <!-- Live tabs here -->
+          </div>
         </div>
-        <div id="tabs-preview" class="tabs-list">
-          <!-- Live tabs here -->
+
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Script Editor</div>
+            <button id="upload-btn" class="icon-btn" title="Upload script from file">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span style="font-size: 10px; margin-left: 4px; font-weight: 700;">LOAD FILE</span>
+            </button>
+          </div>
+          <input type="file" id="script-upload" style="display: none;" accept=".js,.ts,.txt,.json">
+          <textarea id="script-input" placeholder="// Write God-Mode script here..."></textarea>
+          <div class="button-group">
+            <button id="inject-btn" class="btn-primary">Execute Protocol</button>
+            <button id="clear-btn" class="btn-secondary">Reset Console</button>
+          </div>
         </div>
       </div>
 
-      <div class="section">
-        <div class="section-header">
-          <div class="section-title">Script Editor</div>
-          <button id="upload-btn" class="icon-btn" title="Upload script from file">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-              stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            <span style="font-size: 10px; margin-left: 4px; font-weight: 700;">LOAD FILE</span>
-          </button>
-        </div>
-        <input type="file" id="script-upload" style="display: none;" accept=".js,.ts,.txt,.json">
-        <textarea id="script-input" placeholder="// Write God-Mode script here..."></textarea>
-        <div class="button-group">
-          <button id="inject-btn" class="btn-primary">Execute Protocol</button>
-          <button id="clear-btn" class="btn-secondary">Reset Console</button>
+      <div id="tab-library" class="tab-view">
+        <div class="section">
+          <div class="section-title">Power Library</div>
+          <div id="script-library" class="script-library">
+            <!-- Library cards -->
+          </div>
         </div>
       </div>
-    </div>
 
-    <div id="tab-library" class="tab-view">
-      <div class="section">
-        <div class="section-title">Power Library</div>
-        <div id="script-library" class="script-library"
-          style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-          <!-- Library cards -->
+      <div id="tab-portal" class="tab-view">
+        <div class="section">
+          <div class="section-title">Advanced Control</div>
+          <p style="color: var(--text-dim); font-size: 13px;">Full Command Center and Orchestration rules.</p>
+          <button id="open-settings-btn" class="btn-primary" style="width: 100%;">Open Command Center</button>
+          <button id="open-popout-btn-alt" class="btn-secondary" style="width: 100%; margin-top: 10px;">Detach
+            Interface</button>
         </div>
-      </div>
-    </div>
-
-    <div id="tab-portal" class="tab-view">
-      <div class="section">
-        <div class="section-title">Advanced Control</div>
-        <p style="color: var(--text-dim); font-size: 13px;">Full Command Center and Orchestration rules.</p>
-        <button id="open-settings-btn" class="btn-primary" style="width: 100%;">Open Command Center</button>
-        <button id="open-popout-btn-alt" class="btn-secondary" style="width: 100%; margin-top: 10px;">Detach
-          Interface</button>
       </div>
     </div>
   </div>

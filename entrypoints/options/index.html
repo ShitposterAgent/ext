@@ -48,6 +48,16 @@
                 </svg>
                 Audit Logs
             </div>
+            <div class="nav-item" data-tab="settings">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path
+                        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+                    </path>
+                </svg>
+                System Settings
+            </div>
         </div>
         <div class="sidebar-footer">
             <div class="status-indicator">
@@ -125,6 +135,88 @@
             </header>
             <div id="scripts-list" class="scripts-grid">
                 <!-- User scripts cards here -->
+            </div>
+        </section>
+
+        <section id="tab-settings" class="content-tab">
+            <header class="tab-header">
+                <h1>System Settings</h1>
+                <p>Configure orchestration behaviors and environment preferences.</p>
+            </header>
+
+            <div class="settings-grid">
+                <div class="settings-group">
+                    <h2 class="settings-group-title">Orchestration</h2>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Default Target Mode</span>
+                            <p class="setting-desc">Which tabs should scripts affect by default?</p>
+                        </div>
+                        <select id="setting-default-tab-mode" class="setting-input">
+                            <option value="active">Current Active Tab</option>
+                            <option value="all">All Available Tabs</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Injection Feedback</span>
+                            <p class="setting-desc">Show a visual indicator when a script is successfully injected.</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="setting-injection-toast" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h2 class="settings-group-title">Interface</h2>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Editor Theme</span>
+                            <p class="setting-desc">Customize the Script Editor's appearance.</p>
+                        </div>
+                        <select id="setting-editor-theme" class="setting-input">
+                            <option value="dracula">Dracula (Default)</option>
+                            <option value="monokai">Monokai</option>
+                            <option value="nord">Nord</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Interface Density</span>
+                            <p class="setting-desc">Adjust the scale of UI elements.</p>
+                        </div>
+                        <div class="density-toggles">
+                            <button class="density-btn active" data-density="normal">Normal</button>
+                            <button class="density-btn" data-density="compact">Compact</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h2 class="settings-group-title">Rust Controller</h2>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Controller Endpoint</span>
+                            <p class="setting-desc">Local address of the BGM Rust backend.</p>
+                        </div>
+                        <input type="text" id="setting-controller-url" class="setting-input"
+                            value="http://localhost:3000">
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Sync Frequency (ms)</span>
+                            <p class="setting-desc">How often should state be mirrored to the controller?</p>
+                        </div>
+                        <input type="number" id="setting-sync-freq" class="setting-input" value="1000" step="500"
+                            min="500">
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
+                    <button id="save-settings-btn" class="btn-primary">Apply Global Changes</button>
+                </div>
             </div>
         </section>
 
