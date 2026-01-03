@@ -278,11 +278,13 @@
       max-width: 200px;
     }
 
-    .tabs-content {
+    .content {
       flex: 1;
       overflow-y: auto;
       padding-bottom: 70px;
       /* Space for bottom nav */
+      display: flex;
+      flex-direction: column;
     }
 
     .tab-view {
@@ -338,11 +340,6 @@
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-
-    /* Adjust existing sections to fit in views */
-    .content {
-      padding: 0;
-    }
   </style>
 </head>
 
@@ -384,7 +381,19 @@
       </div>
 
       <div class="section">
-        <div class="section-title">Script Editor</div>
+        <div class="section-header">
+          <div class="section-title">Script Editor</div>
+          <button id="upload-btn" class="icon-btn" title="Upload script from file">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span style="font-size: 10px; margin-left: 4px; font-weight: 700;">LOAD FILE</span>
+          </button>
+        </div>
+        <input type="file" id="script-upload" style="display: none;" accept=".js,.ts,.txt,.json">
         <textarea id="script-input" placeholder="// Write God-Mode script here..."></textarea>
         <div class="button-group">
           <button id="inject-btn" class="btn-primary">Execute Protocol</button>

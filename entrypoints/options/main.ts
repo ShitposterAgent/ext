@@ -16,9 +16,41 @@ document.addEventListener('DOMContentLoaded', async () => {
     const overlay = document.getElementById('script-editor-overlay');
     const saveBtn = document.getElementById('save-script-btn');
     const closeBtns = document.querySelectorAll('.close-overlay');
+    const auditSearch = document.getElementById('log-search') as HTMLInputElement;
+    const auditTypeFilter = document.getElementById('log-filter-type') as HTMLSelectElement;
+    const clearLogsBtn = document.getElementById('clear-logs-btn');
+    const importBtn = document.getElementById('import-script-btn');
+    const importInput = document.getElementById('script-import-input') as HTMLInputElement;
 
+    let allLogs: any[] = [];
     let userScripts: UserScript[] = [];
     let editingId: string | null = null;
+
+    // Import Logic
+    importBtn?.addEventListener('click', () => importInput.click());
+    importInput?.addEventListener('change', (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (event) => {
+            const content = event.target?.result as string;
+            if (content) {
+                const newScript: UserScript = {
+                    id: Date.now().toString(),
+                    name: file.name.replace(/\.[^/.]+$/, ""), // Remove extension for name
+                    pattern: ".*",
+                    code: content,
+                    enabled: true
+                };
+                userScripts.push(newScript);
+                await syncScripts();
+                renderScripts();
+                console.log(`[BGM] Imported script: ${newScript.name}`);
+            }
+        };
+        reader.readAsText(file);
+    });
 
     // Tab Switching
     navItems.forEach(item => {

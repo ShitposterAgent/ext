@@ -15,8 +15,28 @@ async function init() {
     const library = document.getElementById('script-library');
     const tabsList = document.getElementById('tabs-preview');
     const tabSelect = document.getElementById('tab-select') as HTMLSelectElement;
+    const uploadBtn = document.getElementById('upload-btn');
+    const fileInput = document.getElementById('script-upload') as HTMLInputElement;
 
     console.log("[BGM] Popup initialized. Popout button found:", !!popoutBtn);
+
+    // File Upload Handler
+    uploadBtn?.addEventListener('click', () => fileInput.click());
+    fileInput?.addEventListener('change', (e) => {
+        const file = (e.target as HTMLInputElement).files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target?.result as string;
+            if (content) {
+                input.value = content;
+                chrome.storage.local.set({ bgm_editor: content });
+                console.log(`[BGM] Loaded script from ${file.name}`);
+            }
+        };
+        reader.readAsText(file);
+    });
 
     // Persistence: Load State
     const state = await chrome.storage.local.get(['bgm_editor', 'bgm_tab_mode']);
@@ -134,16 +154,30 @@ async function init() {
     const bottomNavItems = document.querySelectorAll('.bottom-nav .nav-item');
     const tabViews = document.querySelectorAll('.tab-view');
 
+    console.log(`[BGM] Found ${bottomNavItems.length} nav items and ${tabViews.length} views.`);
+
     bottomNavItems.forEach(item => {
         item.addEventListener('click', () => {
             const target = item.getAttribute('data-tab');
+            console.log(`[BGM] Navigation clicked: ${target}`);
+
             bottomNavItems.forEach(i => i.classList.remove('active'));
             item.classList.add('active');
+
             tabViews.forEach(v => {
-                v.classList.toggle('active', v.id === `tab-${target}`);
+                const isActive = v.id === `tab-${target}`;
+                v.classList.toggle('active', isActive);
+                console.log(`[BGM] View ${v.id} active: ${isActive}`);
             });
         });
     });
+
+    // Initial check: ensure only one view is active
+    const activeNav = document.querySelector('.bottom-nav .nav-item.active');
+    if (activeNav) {
+        const target = activeNav.getAttribute('data-tab');
+        tabViews.forEach(v => v.classList.toggle('active', v.id === `tab-${target}`));
+    }
 
     // Portal Actions
     const openSettingsBtn = document.getElementById('open-settings-btn');

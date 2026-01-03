@@ -117,7 +117,11 @@
                     <h1>User Scripts</h1>
                     <p>Manage persistent "God-Mode" behaviors.</p>
                 </div>
-                <button id="add-script-btn" class="btn-primary">+ Create New Script</button>
+                <div class="header-actions" style="display: flex; gap: 10px;">
+                    <button id="import-script-btn" class="btn-secondary">Import Script</button>
+                    <button id="add-script-btn" class="btn-primary">+ Create New Script</button>
+                    <input type="file" id="script-import-input" style="display: none;" accept=".js,.ts,.txt,.json">
+                </div>
             </header>
             <div id="scripts-list" class="scripts-grid">
                 <!-- User scripts cards here -->
