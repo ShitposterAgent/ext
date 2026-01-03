@@ -33,14 +33,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     const loadScripts = async () => {
-        const data = await chrome.storage.local.get(['user_scripts', 'bgm_rules']);
+        const data = await chrome.storage.local.get(['user_scripts', 'audit_logs']);
         userScripts = data.user_scripts || [];
         renderScripts();
+        renderLogs(data.audit_logs || []);
 
         // Update stats
         const tabsData = await chrome.tabs.query({});
         document.getElementById('stat-tabs')!.textContent = String(tabsData.length);
         document.getElementById('stat-rules')!.textContent = String(userScripts.filter(s => s.enabled).length);
+        document.getElementById('stat-injections')!.textContent = String((data.audit_logs || []).filter((l: any) => l.type === 'injection').length);
+    };
+
+    const renderLogs = (logs: any[]) => {
+        const tbody = document.getElementById('audit-tbody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        logs.forEach(log => {
+            const tr = document.createElement('tr');
+            const time = new Date(log.time).toLocaleTimeString();
+            tr.innerHTML = `
+                <td style="white-space: nowrap; color: var(--text-dim)">${time}</td>
+                <td><span style="font-weight: 600">${log.type}</span></td>
+                <td><span class="script-card-pattern" style="font-size: 10px">${log.source || 'N/A'}</span></td>
+                <td><span class="status-tag ${log.success ? 'success' : 'error'}">${log.success ? 'Success' : 'Failed'}</span></td>
+                <td><div class="log-details">${log.error || log.result || log.script || ''}</div></td>
+            `;
+            tbody.appendChild(tr);
+        });
     };
 
     const renderScripts = () => {

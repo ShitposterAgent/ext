@@ -58,6 +58,37 @@
     </nav>
 
     <main class="main-content">
+        <section id="tab-logs" class="content-tab">
+            <header class="tab-header">
+                <h1>Audit Logs</h1>
+                <p>Track every protocol execution and system event.</p>
+            </header>
+            <div class="filter-bar">
+                <input type="text" id="log-search" placeholder="Search by source, script or error...">
+                <select id="log-filter-type">
+                    <option value="all">All Types</option>
+                    <option value="injection">Injections</option>
+                    <option value="error">Errors</option>
+                </select>
+                <button id="clear-logs-btn" class="btn-secondary" style="color: #ff4d4d">Clear All Logs</button>
+            </div>
+            <div class="logs-container">
+                <table class="audit-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Type</th>
+                            <th>Source</th>
+                            <th>Status</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-tbody">
+                        <!-- Logs will be injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
         <section id="tab-dashboard" class="content-tab active">
             <header class="tab-header">
                 <h1>Orchestration Dashboard</h1>
