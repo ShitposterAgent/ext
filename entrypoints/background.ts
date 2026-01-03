@@ -25,7 +25,54 @@ export default defineBackground(() => {
           if (tab.id) tryInject(tab.id, script);
         }
       } else {
-        tryInject(tabId, script);
+        tryInject(Number(tabId), script);
+      }
+    } else if (msg.type === 'navigate') {
+      const { tabId, url } = msg;
+      if (tabId === 'new') {
+        chrome.tabs.create({ url });
+      } else {
+        chrome.tabs.update(Number(tabId), { url });
+      }
+    } else if (msg.type === 'scroll') {
+      const { tabId, x, y } = msg;
+      const script = `window.scrollTo(${x || 0}, ${y || 0})`;
+      tryInject(Number(tabId), script, 'scroll');
+    } else if (msg.type === 'resize') {
+      const { width, height } = msg;
+      chrome.windows.getCurrent((win) => {
+        if (win.id) chrome.windows.update(win.id, { width, height });
+      });
+    } else if (msg.type === 'click') {
+      const { tabId, selector } = msg;
+      const script = `document.querySelector('${selector}')?.click()`;
+      tryInject(Number(tabId), script, 'click');
+    } else if (msg.type === 'type') {
+      const { tabId, selector, text } = msg;
+      const script = `
+        (function() {
+          const el = document.querySelector('${selector}');
+          if (el) {
+            el.value = '${text}';
+            el.dispatchEvent(new Event('input', { bubbles: true }));
+            el.dispatchEvent(new Event('change', { bubbles: true }));
+          }
+        })()
+      `;
+      tryInject(Number(tabId), script, 'type');
+    } else if (msg.type === 'capture') {
+      const { tabId } = msg;
+      chrome.tabs.captureVisibleTab((dataUrl) => {
+        bridge.sendMessage({ type: 'capture_result', tabId, dataUrl });
+      });
+    } else if (msg.type === 'get_html') {
+      const { tabId } = msg;
+      const script = `document.documentElement.outerHTML`;
+      try {
+        const result = await bridge.inject(Number(tabId), script);
+        bridge.sendMessage({ type: 'html_result', tabId, html: result });
+      } catch (e: any) {
+        bridge.sendMessage({ type: 'html_result', tabId, error: e.message });
       }
     } else if (msg.type === 'set_rules') {
       rules = msg.rules;

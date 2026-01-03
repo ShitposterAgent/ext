@@ -214,6 +214,65 @@
                     </div>
                 </div>
 
+                <div class="settings-group">
+                    <h2 class="settings-group-title">Advanced Control</h2>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Log Retention</span>
+                            <p class="setting-desc">Auto-purge audit logs after reaching this limit.</p>
+                        </div>
+                        <select id="setting-log-retention" class="setting-input">
+                            <option value="100">Last 100 entries</option>
+                            <option value="500">Last 500 entries</option>
+                            <option value="1000">Last 1000 entries</option>
+                            <option value="0">Unlimited (Careful!)</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Developer Protocol</span>
+                            <p class="setting-desc">Enable verbose console logging and debugger hooks.</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="setting-dev-mode">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group" style="border-color: rgba(255, 77, 77, 0.2);">
+                    <h2 class="settings-group-title" style="color: #ff4d4d;">Security & Sandbox</h2>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Bypass CSP (Simulation)</span>
+                            <p class="setting-desc">Attempt to inject even on strict Content Security Policy sites.</p>
+                        </div>
+                        <label class="switch">
+                            <input type="checkbox" id="setting-bypass-csp">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="settings-group">
+                    <h2 class="settings-group-title">Data Management</h2>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label">Export Infrastructure</span>
+                            <p class="setting-desc">Download all your scripts and settings as a JSON bundle.</p>
+                        </div>
+                        <button id="export-all-btn" class="btn-secondary">Export All Data</button>
+                    </div>
+                    <div class="setting-item">
+                        <div class="setting-info">
+                            <span class="setting-label" style="color: #ff4d4d;">System Reset</span>
+                            <p class="setting-desc">Wipe all local data. This action is irreversible.</p>
+                        </div>
+                        <button id="factory-reset-btn" class="btn-secondary"
+                            style="border-color: rgba(255, 77, 77, 0.4); color: #ff4d4d;">Factory Reset</button>
+                    </div>
+                </div>
+
                 <div style="margin-top: 20px; display: flex; justify-content: flex-end;">
                     <button id="save-settings-btn" class="btn-primary">Apply Global Changes</button>
                 </div>

@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (content) {
                 const newScript: UserScript = {
                     id: Date.now().toString(),
-                    name: file.name.replace(/\.[^/.]+$/, ""), // Remove extension for name
+                    name: file.name.replace(/\.[^/.]+$/, ""),
                     pattern: ".*",
                     code: content,
                     enabled: true
@@ -46,7 +46,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                 userScripts.push(newScript);
                 await syncScripts();
                 renderScripts();
-                console.log(`[BGM] Imported script: ${newScript.name}`);
             }
         };
         reader.readAsText(file);
@@ -64,14 +63,89 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    // Settings Logic
+    const saveSettingsBtn = document.getElementById('save-settings-btn');
+    const densityBtns = document.querySelectorAll('.density-btn');
+
+    const loadSettings = async () => {
+        const settings = await chrome.storage.local.get([
+            'setting_default_tab_mode',
+            'setting_injection_toast',
+            'setting_editor_theme',
+            'setting_interface_density',
+            'setting_controller_url',
+            'setting_sync_freq',
+            'setting_log_retention',
+            'setting_dev_mode',
+            'setting_bypass_csp'
+        ]);
+
+        (document.getElementById('setting-default-tab-mode') as HTMLSelectElement).value = settings.setting_default_tab_mode || 'active';
+        (document.getElementById('setting-injection-toast') as HTMLInputElement).checked = settings.setting_injection_toast !== false;
+        (document.getElementById('setting-editor-theme') as HTMLSelectElement).value = settings.setting_editor_theme || 'dracula';
+        (document.getElementById('setting-controller-url') as HTMLInputElement).value = settings.setting_controller_url || 'http://localhost:3000';
+        (document.getElementById('setting-sync-freq') as HTMLInputElement).value = settings.setting_sync_freq || '1000';
+        (document.getElementById('setting-log-retention') as HTMLSelectElement).value = settings.setting_log_retention || '500';
+        (document.getElementById('setting-dev-mode') as HTMLInputElement).checked = !!settings.setting_dev_mode;
+        (document.getElementById('setting-bypass-csp') as HTMLInputElement).checked = !!settings.setting_bypass_csp;
+
+        const density = settings.setting_interface_density || 'normal';
+        densityBtns.forEach(btn => btn.classList.toggle('active', btn.getAttribute('data-density') === density));
+        document.body.classList.toggle('compact-mode', density === 'compact');
+    };
+
+    densityBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            densityBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const density = btn.getAttribute('data-density');
+            document.body.classList.toggle('compact-mode', density === 'compact');
+        });
+    });
+
+    saveSettingsBtn?.addEventListener('click', async () => {
+        const settings = {
+            setting_default_tab_mode: (document.getElementById('setting-default-tab-mode') as HTMLSelectElement).value,
+            setting_injection_toast: (document.getElementById('setting-injection-toast') as HTMLInputElement).checked,
+            setting_editor_theme: (document.getElementById('setting-editor-theme') as HTMLSelectElement).value,
+            setting_interface_density: document.querySelector('.density-btn.active')?.getAttribute('data-density'),
+            setting_controller_url: (document.getElementById('setting-controller-url') as HTMLInputElement).value,
+            setting_sync_freq: (document.getElementById('setting-sync-freq') as HTMLInputElement).value,
+            setting_log_retention: (document.getElementById('setting-log-retention') as HTMLSelectElement).value,
+            setting_dev_mode: (document.getElementById('setting-dev-mode') as HTMLInputElement).checked,
+            setting_bypass_csp: (document.getElementById('setting-bypass-csp') as HTMLInputElement).checked
+        };
+
+        await chrome.storage.local.set(settings);
+        saveSettingsBtn.textContent = 'Changes Applied!';
+        setTimeout(() => saveSettingsBtn.textContent = 'Apply Global Changes', 2000);
+    });
+
+    document.getElementById('export-all-btn')?.addEventListener('click', async () => {
+        const data = await chrome.storage.local.get(null);
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bgm-infrastructure-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+    });
+
+    document.getElementById('factory-reset-btn')?.addEventListener('click', async () => {
+        if (confirm('🚨 PROTOCOL EMERGENCY: This will wipe all scripts, logs, and settings. Are you absolutely sure?')) {
+            await chrome.storage.local.clear();
+            window.location.reload();
+        }
+    });
+
     const loadScripts = async () => {
         const data = await chrome.storage.local.get(['user_scripts', 'audit_logs']);
         userScripts = data.user_scripts || [];
         allLogs = data.audit_logs || [];
         renderScripts();
         applyLogFiltering();
+        await loadSettings();
 
-        // Update stats
         const tabsData = await chrome.tabs.query({});
         document.getElementById('stat-tabs')!.textContent = String(tabsData.length);
         document.getElementById('stat-rules')!.textContent = String(userScripts.filter(s => s.enabled).length);
@@ -81,16 +155,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const applyLogFiltering = () => {
         const query = auditSearch.value.toLowerCase();
         const type = auditTypeFilter.value;
-
         const filtered = allLogs.filter(log => {
-            const matchesType = type === 'all' ||
-                (type === 'injection' && log.success) ||
-                (type === 'error' && !log.success);
-            const matchesQuery = !query ||
-                (log.source?.toLowerCase().includes(query)) ||
-                (log.script?.toLowerCase().includes(query)) ||
-                (log.error?.toLowerCase().includes(query)) ||
-                (log.result?.toString().toLowerCase().includes(query));
+            const matchesType = type === 'all' || (type === 'injection' && log.success) || (type === 'error' && !log.success);
+            const matchesQuery = !query || (log.source?.toLowerCase().includes(query)) || (log.script?.toLowerCase().includes(query));
             return matchesType && matchesQuery;
         });
         renderLogs(filtered);
@@ -112,9 +179,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         tbody.innerHTML = '';
         logs.forEach(log => {
             const tr = document.createElement('tr');
-            const time = new Date(log.time).toLocaleTimeString();
             tr.innerHTML = `
-                <td style="white-space: nowrap; color: var(--text-dim)">${time}</td>
+                <td style="white-space: nowrap; color: var(--text-dim)">${new Date(log.time).toLocaleTimeString()}</td>
                 <td><span style="font-weight: 600">${log.type}</span></td>
                 <td><span class="script-card-pattern" style="font-size: 10px">${log.source || 'N/A'}</span></td>
                 <td><span class="status-tag ${log.success ? 'success' : 'error'}">${log.success ? 'Success' : 'Failed'}</span></td>
@@ -138,18 +204,17 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </div>
                     <label class="switch">
                         <input type="checkbox" ${script.enabled ? 'checked' : ''} data-id="${script.id}">
-                        <span class="slider round"></span>
+                        <span class="slider"></span>
                     </label>
                 </div>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn-secondary edit-script" data-id="${script.id}">Edit</button>
-                    <button class="btn-secondary delete-script" style="color: #ff4d4d" data-id="${script.id}">Delete</button>
+                    <button class="btn-secondary delete-script" style="color: #ff4d4d;" data-id="${script.id}">Delete</button>
                 </div>
             `;
             scriptsList.appendChild(card);
         });
 
-        // Add event listeners to toggle switches
         scriptsList.querySelectorAll('input[type="checkbox"]').forEach(input => {
             input.addEventListener('change', async (e) => {
                 const id = (e.target as HTMLInputElement).getAttribute('data-id');
@@ -159,7 +224,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         });
 
-        // Edit/Delete handlers
         scriptsList.querySelectorAll('.edit-script').forEach(btn => {
             btn.addEventListener('click', () => {
                 const id = btn.getAttribute('data-id');
@@ -180,16 +244,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const syncScripts = async () => {
         await chrome.storage.local.set({ user_scripts: userScripts });
-        // Also update the 'bgm_rules' used by the background script
-        const rules = userScripts.map(s => ({
-            id: s.id,
-            pattern: s.pattern,
-            script: s.code,
-            enabled: s.enabled
-        }));
+        const rules = userScripts.map(s => ({ id: s.id, pattern: s.pattern, script: s.code, enabled: s.enabled }));
         await chrome.storage.local.set({ bgm_rules: rules });
-
-        // Notify controller via background
         chrome.runtime.sendMessage({ type: 'update-rules-broadcast' });
     };
 
