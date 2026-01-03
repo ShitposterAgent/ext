@@ -1,169 +1,148 @@
-// Premium BGM Logic
-const scripts = [
-    { name: 'Pure Dark', desc: 'Deep invert filter', code: 'document.body.style.filter = "invert(1) hue-rotate(180deg)";' },
-    { name: 'Nuke UI', desc: 'Remove ads & sidebars', code: 'document.querySelectorAll("aside, nav, .ads, [class*=\'sidebar\']").forEach(el => el.remove());' },
-    { name: 'Freeze Page', desc: 'Stop all scripts', code: 'window.stop();' },
-    { name: 'X-Ray Mode', desc: 'Highlight all elements', code: 'document.querySelectorAll("*").forEach(el => el.style.outline = "1px solid red");' },
-];
+import { Sidebar } from '../../components/Sidebar';
+import { Editor } from '../../components/Editor';
+import { APIView } from '../../components/APIView';
 
-console.log("[BGM] Script loaded");
+class BGMApp {
+    private appRoot: HTMLElement;
+    private sidebar: Sidebar;
+    private currentView: HTMLElement | null = null;
 
-// 1. Immediate UI Setup
-function setupUI() {
-    const navItems = document.querySelectorAll('.bottom-nav .nav-item');
-    const views = document.querySelectorAll('.tab-view');
-    const popoutBtn = document.getElementById('popout-btn');
-    const popoutBtnAlt = document.getElementById('open-popout-btn-alt');
-    const settingsBtn = document.getElementById('open-settings-btn');
+    constructor() {
+        this.appRoot = document.getElementById('app')!;
+        this.sidebar = new Sidebar((tab) => this.switchView(tab));
+        this.init();
+    }
 
-    console.log(`[BGM] Found ${navItems.length} nav items and ${views.length} views`);
+    private init() {
+        this.appRoot.appendChild(this.sidebar.getElement());
+        const mainArea = document.createElement('main');
+        mainArea.className = 'main-layout';
+        mainArea.id = 'main-content-area';
+        this.appRoot.appendChild(mainArea);
 
-    const doSwitch = (tabId: string) => {
-        console.log(`[BGM] Tab Transition -> ${tabId}`);
-        navItems.forEach(item => item.classList.toggle('active', item.getAttribute('data-tab') === tabId));
-        views.forEach(view => view.classList.toggle('active', view.id === `tab-${tabId}`));
-    };
+        // Default view
+        this.switchView('protocol');
+        this.watchState();
+    }
 
-    navItems.forEach(item => {
-        item.addEventListener('click', () => {
-            const tab = item.getAttribute('data-tab');
-            if (tab) doSwitch(tab);
-        });
-    });
+    private switchView(tabId: string) {
+        const mainArea = document.getElementById('main-content-area')!;
+        mainArea.innerHTML = '';
 
-    const openInTab = () => {
-        try {
-            const url = chrome.runtime.getURL('popup.html');
-            chrome.tabs.create({ url });
-        } catch (e) {
-            window.open(window.location.href, '_blank');
+        switch (tabId) {
+            case 'protocol':
+                this.currentView = new Editor().getElement();
+                this.bindEditorEvents(this.currentView);
+                break;
+            case 'api':
+                this.currentView = new APIView().getElement();
+                this.bindAPIEvents(this.currentView);
+                break;
+            case 'vault':
+                this.currentView = this.renderPlaceholder('Vault', 'Access stored God-Mode scripts.');
+                break;
         }
-    };
 
-    popoutBtn?.addEventListener('click', openInTab);
-    popoutBtnAlt?.addEventListener('click', openInTab);
-    settingsBtn?.addEventListener('click', () => chrome.runtime.openOptionsPage());
+        if (this.currentView) mainArea.appendChild(this.currentView);
+    }
 
-    // Fallback sync
-    const active = document.querySelector('.nav-item.active')?.getAttribute('data-tab');
-    if (active) doSwitch(active);
-}
+    private bindEditorEvents(view: HTMLElement) {
+        const input = view.querySelector('#bgm-code-input') as HTMLTextAreaElement;
+        const executeBtn = view.querySelector('#btn-execute') as HTMLButtonElement;
+        const clearBtn = view.querySelector('#btn-clear-code') as HTMLButtonElement;
 
-// 2. Heavy Logic
-async function loadState() {
-    const input = document.getElementById('script-input') as HTMLTextAreaElement;
-    const library = document.getElementById('script-library');
-    const injectBtn = document.getElementById('inject-btn');
-    const clearBtn = document.getElementById('clear-btn');
-    const uploadBtn = document.getElementById('upload-btn');
-    const fileInput = document.getElementById('script-upload') as HTMLInputElement;
+        chrome.storage.local.get(['bgm_editor'], (res) => {
+            if (res.bgm_editor) input.value = res.bgm_editor;
+        });
 
-    try {
-        const data = await chrome.storage.local.get(['bgm_editor']);
-        if (data.bgm_editor && input) input.value = data.bgm_editor;
-
-        input?.addEventListener('input', () => {
+        input.addEventListener('input', () => {
             chrome.storage.local.set({ bgm_editor: input.value });
         });
 
-        injectBtn?.addEventListener('click', async () => {
-            const code = input?.value;
+        executeBtn.addEventListener('click', () => {
+            const code = input.value;
             if (!code) return;
-            injectBtn.textContent = '...';
+            executeBtn.innerText = 'EXECUTING...';
             chrome.runtime.sendMessage({ type: 'inject-request', tabId: 'active', script: code }, (res) => {
-                injectBtn.textContent = (res && res.success) ? 'Success!' : 'Error';
-                setTimeout(() => injectBtn.textContent = 'Execute Protocol', 1000);
+                executeBtn.innerText = (res && res.success) ? 'PROTOCOL SUCCESS' : 'FAILURE';
+                setTimeout(() => executeBtn.innerText = 'EXECUTE PROTOCOL', 2000);
             });
         });
 
-        clearBtn?.addEventListener('click', () => {
-            if (input) input.value = '';
+        clearBtn.addEventListener('click', () => {
+            input.value = '';
             chrome.storage.local.set({ bgm_editor: '' });
         });
+    }
 
-        uploadBtn?.addEventListener('click', () => fileInput?.click());
-        fileInput?.addEventListener('change', (e) => {
-            const file = (e.target as HTMLInputElement).files?.[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                const content = ev.target?.result as string;
-                if (content && input) {
-                    input.value = content;
-                    chrome.storage.local.set({ bgm_editor: content });
-                }
-            };
-            reader.readAsText(file);
+    private bindAPIEvents(view: HTMLElement) {
+        const portInput = view.querySelector('#port-setting') as HTMLInputElement;
+        const saveBtn = view.querySelector('#btn-save-port') as HTMLButtonElement;
+
+        saveBtn.addEventListener('click', () => {
+            const port = portInput.value;
+            if (port) {
+                chrome.storage.local.set({ bgm_api_port: port }, () => {
+                    chrome.runtime.sendMessage({ type: 'api-reconnect-trigger' });
+                    saveBtn.innerText = 'SYNCED';
+                    setTimeout(() => saveBtn.innerText = 'SYNC', 2000);
+                });
+            }
         });
 
-        // Load Library Cards
-        if (library) {
-            library.innerHTML = '';
-            scripts.forEach(s => {
-                const c = document.createElement('div');
-                c.className = 'script-card';
-                c.innerHTML = `<span class="script-name">${s.name}</span><span class="script-desc">${s.desc}</span>`;
-                c.onclick = () => {
-                    if (input) {
-                        input.value = s.code;
-                        chrome.storage.local.set({ bgm_editor: s.code });
-                    }
-                };
-                library.appendChild(c);
+        // We'll update stats via the watcher
+    }
+
+    private watchState() {
+        const update = () => {
+            chrome.storage.local.get(['bgm_api_connected', 'bgm_api_port', 'bgm_last_commands'], (res) => {
+                // Global sidebar status
+                const globalStatus = document.getElementById('global-status');
+                if (globalStatus) {
+                    globalStatus.innerText = res.bgm_api_connected ? 'LINKED' : 'UNLINKED';
+                    const dot = globalStatus.previousElementSibling as HTMLElement;
+                    if (dot) dot.style.background = res.bgm_api_connected ? '#10b981' : '#ef4444';
+                }
+
+                // Specific API View status
+                const connDisplay = document.getElementById('connection-display');
+                if (connDisplay) {
+                    connDisplay.innerText = res.bgm_api_connected ? 'CONNECTED' : 'DISCONNECTED';
+                    connDisplay.className = `status-value ${res.bgm_api_connected ? 'connected' : 'disconnected'}`;
+                }
+
+                const stream = document.getElementById('command-stream');
+                if (stream && res.bgm_last_commands) {
+                    stream.innerHTML = res.bgm_last_commands.map((c: any) => `
+                <div class="log-line">
+                    <span class="log-time">[${new Date(c.time).toLocaleTimeString()}]</span>
+                    <span class="log-cmd">${c.type.toUpperCase()}</span>
+                    <span class="log-details">${JSON.stringify(c.tab_id || 'active')}</span>
+                </div>
+            `).join('');
+                }
             });
-        }
-    } catch (e) {
-        console.warn("[BGM] Background sync issues:", e);
+        };
+
+        setInterval(update, 1000);
+        update();
+    }
+
+    private renderPlaceholder(title: string, desc: string) {
+        const div = document.createElement('div');
+        div.className = 'view-animate placeholder-view';
+        div.style.padding = '40px';
+        div.innerHTML = `
+      <h2 class="view-title">${title}</h2>
+      <p class="view-subtitle">${desc}</p>
+      <div style="margin-top: 40px; padding: 40px; border: 1px dashed var(--border); border-radius: var(--radius-lg); text-align: center; color: var(--text-muted);">
+        Encryption protocols pending for this module.
+      </div>
+    `;
+        return div;
     }
 }
 
-// 3. API Tab Logic
-function setupAPITab() {
-    const statusText = document.getElementById('api-status-text');
-    const portInput = document.getElementById('api-port-input') as HTMLInputElement;
-    const reconnectBtn = document.getElementById('api-reconnect-btn');
-    const commandLog = document.getElementById('api-command-log');
-
-    const updateStatus = async () => {
-        chrome.storage.local.get(['bgm_api_connected', 'bgm_api_port', 'bgm_last_commands'], (res) => {
-            if (statusText) {
-                statusText.innerText = res.bgm_api_connected ? 'CONNECTED' : 'DISCONNECTED';
-                statusText.style.color = res.bgm_api_connected ? '#4caf50' : '#ff4d4d';
-            }
-            if (portInput && res.bgm_api_port) {
-                portInput.value = res.bgm_api_port;
-            }
-            if (commandLog && res.bgm_last_commands) {
-                commandLog.innerHTML = res.bgm_last_commands.map((c: any) =>
-                    `<div style="margin-bottom: 5px;"><span style="color: #666;">[${new Date(c.time).toLocaleTimeString()}]</span> ${c.type}</div>`
-                ).join('') || '<div style="color: #666;">Waiting for commands...</div>';
-            }
-        });
-    };
-
-    reconnectBtn?.addEventListener('click', () => {
-        const port = portInput?.value;
-        if (port) {
-            chrome.storage.local.set({ bgm_api_port: port }, () => {
-                // Signal background to reconnect
-                chrome.runtime.sendMessage({ type: 'api-reconnect-trigger' });
-            });
-        }
-    });
-
-    setInterval(updateStatus, 1000);
-    updateStatus();
-}
-
-// Global Init
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        setupUI();
-        loadState();
-        setupAPITab();
-    });
-} else {
-    setupUI();
-    loadState();
-    setupAPITab();
-}
+document.addEventListener('DOMContentLoaded', () => {
+    new BGMApp();
+});
