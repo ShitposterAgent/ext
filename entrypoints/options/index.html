@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>BGM Command Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;600&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-icon"></div>
+            <span>BGM v0.1.0</span>
+        </div>
+        <div class="nav-items">
+            <div class="nav-item active" data-tab="dashboard">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="3" width="7" height="7"></rect>
+                    <rect x="14" y="14" width="7" height="7"></rect>
+                    <rect x="3" y="14" width="7" height="7"></rect>
+                </svg>
+                Dashboard
+            </div>
+            <div class="nav-item" data-tab="scripts">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                    <polyline points="10 9 9 9 8 9"></polyline>
+                </svg>
+                User Scripts
+            </div>
+            <div class="nav-item" data-tab="logs">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                </svg>
+                Audit Logs
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Controller Online</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section id="tab-dashboard" class="content-tab active">
+            <header class="tab-header">
+                <h1>Orchestration Dashboard</h1>
+                <p>Real-time browser state and injection metrics.</p>
+            </header>
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span class="stat-label">Active Tabs</span>
+                    <span class="stat-value" id="stat-tabs">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Scripts Ran (Session)</span>
+                    <span class="stat-value" id="stat-injections">0</span>
+                </div>
+                <div class="stat-card">
+                    <span class="stat-label">Active Rules</span>
+                    <span class="stat-value" id="stat-rules">0</span>
+                </div>
+            </div>
+        </section>
+
+        <section id="tab-scripts" class="content-tab">
+            <header class="tab-header"
+                style="flex-direction: row; justify-content: space-between; align-items: center;">
+                <div>
+                    <h1>User Scripts</h1>
+                    <p>Manage persistent "God-Mode" behaviors.</p>
+                </div>
+                <button id="add-script-btn" class="btn-primary">+ Create New Script</button>
+            </header>
+            <div id="scripts-list" class="scripts-grid">
+                <!-- User scripts cards here -->
+            </div>
+        </section>
+
+        <div id="script-editor-overlay" class="overlay">
+            <div class="modal">
+                <div class="modal-header">
+                    <h2 id="modal-title">New User Script</h2>
+                    <button class="close-overlay">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Script Name</label>
+                        <input type="text" id="edit-name" placeholder="My Awesome Script">
+                    </div>
+                    <div class="form-group">
+                        <label>URL Match Pattern (Regex)</label>
+                        <input type="text" id="edit-pattern" placeholder="*://google.com/*">
+                    </div>
+                    <div class="form-group">
+                        <label>Payload (JavaScript)</label>
+                        <textarea id="edit-code" class="code-editor"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary close-overlay">Cancel</button>
+                    <button id="save-script-btn" class="btn-primary">Save Script</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script type="module" src="./main.ts"></script>
+</body>
+
+</html>
