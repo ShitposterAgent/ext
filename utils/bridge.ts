@@ -37,24 +37,39 @@ export class BGMBridge {
     }
 
     public async inject(tabId: number, script: string) {
-        return new Promise<void>((resolve, reject) => {
+        return new Promise<any>((resolve, reject) => {
             const debuggee = { tabId };
             chrome.debugger.attach(debuggee, '1.3', () => {
-                if (chrome.runtime.lastError) return reject(chrome.runtime.lastError);
+                if (chrome.runtime.lastError) {
+                    if (chrome.runtime.lastError.message?.includes('already attached')) {
+                        // Continue if already attached
+                    } else {
+                        return reject(chrome.runtime.lastError);
+                    }
+                }
 
                 chrome.debugger.sendCommand(debuggee, 'Runtime.evaluate', {
                     expression: script,
                     userGesture: true,
                     awaitPromise: true,
+                    returnByValue: true
                 }, (result) => {
                     const err = chrome.runtime.lastError;
+                    // We don't detach immediately if we want to stay attached for events, 
+                    // but for simple injection we can.
                     chrome.debugger.detach(debuggee, () => {
                         if (err) reject(err);
                         else if ((result as any)?.exceptionDetails) reject(new Error((result as any).exceptionDetails.text));
-                        else resolve();
+                        else resolve((result as any)?.result?.value);
                     });
                 });
             });
+        });
+    }
+
+    public onEvent(cb: (method: string, params: any) => void) {
+        chrome.debugger.onEvent.addListener((source, method, params) => {
+            cb(method, params);
         });
     }
 }
