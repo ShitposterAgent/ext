@@ -12,11 +12,11 @@ export default defineBackground(() => {
   let rules: Rule[] = [];
 
   // Load rules from storage
-  chrome.storage.local.get(['bgm_rules'], (result) => {
+  chrome.storage.local.get(['bgm_rules'], (result: { [key: string]: any }) => {
     if (result.bgm_rules) rules = result.bgm_rules;
   });
 
-  bridge.onMessage(async (msg) => {
+  bridge.onMessage(async (msg: any) => {
     if (msg.type === 'inject') {
       const { tabId, script } = msg;
       if (tabId === 'all') {
@@ -29,11 +29,18 @@ export default defineBackground(() => {
       }
     } else if (msg.type === 'navigate') {
       const { tabId, url } = msg;
-      if (tabId === 'new') {
+      if (tabId === 'active') {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]?.id) chrome.tabs.update(tabs[0].id, { url });
+        });
+      } else if (tabId === 'new') {
         chrome.tabs.create({ url });
       } else {
         chrome.tabs.update(Number(tabId), { url });
       }
+    } else if (msg.type === 'open_tab') {
+      const { url } = msg;
+      chrome.tabs.create({ url: url || 'about:blank' });
     } else if (msg.type === 'scroll') {
       const { tabId, x, y } = msg;
       const script = `window.scrollTo(${x || 0}, ${y || 0})`;
@@ -131,13 +138,40 @@ export default defineBackground(() => {
         .catch((err) => sendResponse({ success: false, error: err.message }));
       return true;
     } else if (message.type === 'update-rules-broadcast') {
-      chrome.storage.local.get(['bgm_rules'], (result) => {
+      chrome.storage.local.get(['bgm_rules'], (result: any) => {
         if (result.bgm_rules) {
           rules = result.bgm_rules;
           bridge.sendMessage({ type: 'set_rules', rules: rules });
         }
       });
+    } else if (message.type === 'api-reconnect-trigger') {
+      chrome.storage.local.get(['bgm_api_port'], (res: any) => {
+        if (res.bgm_api_port) {
+          bridge.setPort(Number(res.bgm_api_port));
+        }
+      });
     }
+  });
+
+  // Track connection status and command log
+  const updateAPIState = () => {
+    chrome.storage.local.set({
+      bgm_api_connected: bridge.isConnected()
+    });
+  };
+
+  setInterval(updateAPIState, 2000);
+
+  async function logCommand(type: string, details: any) {
+    chrome.storage.local.get(['bgm_last_commands'], (res: any) => {
+      const logs = [{ type, time: Date.now(), ...details }, ...(res.bgm_last_commands || [])].slice(0, 5);
+      chrome.storage.local.set({ bgm_last_commands: logs });
+    });
+  }
+
+  const originalOnMessage = bridge.onMessage;
+  bridge.onMessage((msg: any) => {
+    logCommand(msg.type, { ...msg });
   });
 
   const updateTabs = async () => {

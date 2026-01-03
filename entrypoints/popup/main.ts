@@ -117,13 +117,53 @@ async function loadState() {
     }
 }
 
+// 3. API Tab Logic
+function setupAPITab() {
+    const statusText = document.getElementById('api-status-text');
+    const portInput = document.getElementById('api-port-input') as HTMLInputElement;
+    const reconnectBtn = document.getElementById('api-reconnect-btn');
+    const commandLog = document.getElementById('api-command-log');
+
+    const updateStatus = async () => {
+        chrome.storage.local.get(['bgm_api_connected', 'bgm_api_port', 'bgm_last_commands'], (res) => {
+            if (statusText) {
+                statusText.innerText = res.bgm_api_connected ? 'CONNECTED' : 'DISCONNECTED';
+                statusText.style.color = res.bgm_api_connected ? '#4caf50' : '#ff4d4d';
+            }
+            if (portInput && res.bgm_api_port) {
+                portInput.value = res.bgm_api_port;
+            }
+            if (commandLog && res.bgm_last_commands) {
+                commandLog.innerHTML = res.bgm_last_commands.map((c: any) =>
+                    `<div style="margin-bottom: 5px;"><span style="color: #666;">[${new Date(c.time).toLocaleTimeString()}]</span> ${c.type}</div>`
+                ).join('') || '<div style="color: #666;">Waiting for commands...</div>';
+            }
+        });
+    };
+
+    reconnectBtn?.addEventListener('click', () => {
+        const port = portInput?.value;
+        if (port) {
+            chrome.storage.local.set({ bgm_api_port: port }, () => {
+                // Signal background to reconnect
+                chrome.runtime.sendMessage({ type: 'api-reconnect-trigger' });
+            });
+        }
+    });
+
+    setInterval(updateStatus, 1000);
+    updateStatus();
+}
+
 // Global Init
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         setupUI();
         loadState();
+        setupAPITab();
     });
 } else {
     setupUI();
     loadState();
+    setupAPITab();
 }

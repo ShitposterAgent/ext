@@ -480,13 +480,31 @@
         </div>
       </div>
 
-      <div id="tab-portal" class="tab-view">
+      <div id="tab-api" class="tab-view">
         <div class="section">
-          <div class="section-title">Advanced Control</div>
-          <p style="color: var(--text-dim); font-size: 13px;">Full Command Center and Orchestration rules.</p>
-          <button id="open-settings-btn" class="btn-primary" style="width: 100%;">Open Command Center</button>
-          <button id="open-popout-btn-alt" class="btn-secondary" style="width: 100%; margin-top: 10px;">Detach
-            Interface</button>
+          <div class="section-title">Brain Connectivity</div>
+          <div class="api-status-card">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span>Status:</span>
+              <span id="api-status-text" style="color: #ff4d4d; font-weight: 700;">DISCONNECTED</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+              <span>Port:</span>
+              <div style="display: flex; gap: 5px;">
+                <input type="number" id="api-port-input" value="58421"
+                  style="width: 70px; background: #2d2d33; border: 1px solid var(--border); color: white; border-radius: 4px; padding: 2px 5px; font-family: 'JetBrains Mono';">
+                <button id="api-reconnect-btn" class="btn-primary"
+                  style="padding: 2px 10px; font-size: 11px;">Save</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Command Log</div>
+          <div id="api-command-log"
+            style="background: #000; border: 1px solid var(--border); border-radius: 8px; height: 200px; overflow-y: auto; font-family: 'JetBrains Mono'; font-size: 11px; padding: 10px; color: #00ff00;">
+            <div style="color: #666;">Waiting for commands...</div>
+          </div>
         </div>
       </div>
     </div>
@@ -508,15 +526,12 @@
       </svg>
       <span class="nav-label">Vault</span>
     </div>
-    <div class="nav-item" data-tab="portal">
+    <div class="nav-item" data-tab="api">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"></circle>
-        <path
-          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
-        </path>
+        <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
       </svg>
-      <span class="nav-label">Bridge</span>
+      <span class="nav-label">API</span>
     </div>
   </nav>
   <script type="module" src="./main.ts"></script>
