@@ -34,12 +34,32 @@ export default defineBackground(() => {
     }
   });
 
-  async function tryInject(tabId: number, script: string) {
+  async function logAudit(type: string, details: any) {
+    const logEntry = {
+      id: Date.now().toString(),
+      timestamp: new Error().stack, // Just for time info or use new Date().toISOString()
+      time: new Date().toISOString(),
+      type,
+      ...details
+    };
+
+    chrome.storage.local.get(['audit_logs'], (result) => {
+      const logs = [logEntry, ...(result.audit_logs || [])].slice(0, 100);
+      chrome.storage.local.set({ audit_logs: logs });
+    });
+
+    // Also notify controller
+    bridge.sendMessage({ type: 'audit_log', log: logEntry });
+  }
+
+  async function tryInject(tabId: number, script: string, source: string = 'remote') {
     try {
       const result = await bridge.inject(tabId, script);
+      await logAudit('injection', { tabId, script: script.substring(0, 100), result, source, success: true });
       bridge.sendMessage({ type: 'injection_result', tabId, success: true, result });
     } catch (e: any) {
       console.error(`[BGM] Injection failed for tab ${tabId}:`, e);
+      await logAudit('injection', { tabId, script: script.substring(0, 100), error: e.message, source, success: false });
       bridge.sendMessage({ type: 'injection_result', tabId, success: false, error: e.message });
     }
   }
@@ -50,7 +70,7 @@ export default defineBackground(() => {
       for (const rule of rules) {
         if (rule.enabled && new RegExp(rule.pattern).test(tab.url)) {
           console.log(`[BGM] Auto-injecting rule ${rule.id} into ${tab.url}`);
-          tryInject(tabId, rule.script);
+          tryInject(tabId, rule.script, `rule:${rule.id}`);
         }
       }
     }
@@ -59,10 +79,17 @@ export default defineBackground(() => {
 
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'inject-request') {
-      bridge.inject(message.tabId, message.script)
+      tryInject(message.tabId, message.script, 'popup')
         .then((result) => sendResponse({ success: true, result }))
         .catch((err) => sendResponse({ success: false, error: err.message }));
       return true;
+    } else if (message.type === 'update-rules-broadcast') {
+      chrome.storage.local.get(['bgm_rules'], (result) => {
+        if (result.bgm_rules) {
+          rules = result.bgm_rules;
+          bridge.sendMessage({ type: 'set_rules', rules: rules });
+        }
+      });
     }
   });
 
