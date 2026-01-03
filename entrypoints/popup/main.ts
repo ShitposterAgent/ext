@@ -1,4 +1,4 @@
-import './style.css';
+// Premium BGM Logic
 
 const scripts = [
     { name: 'Pure Dark', desc: 'Deep invert filter', code: 'document.body.style.filter = "invert(1) hue-rotate(180deg)";' },
@@ -7,7 +7,7 @@ const scripts = [
     { name: 'X-Ray Mode', desc: 'Highlight all elements', code: 'document.querySelectorAll("*").forEach(el => el.style.outline = "1px solid red");' },
 ];
 
-document.addEventListener('DOMContentLoaded', async () => {
+async function init() {
     const input = document.getElementById('script-input') as HTMLTextAreaElement;
     const injectBtn = document.getElementById('inject-btn');
     const clearBtn = document.getElementById('clear-btn');
@@ -15,6 +15,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     const library = document.getElementById('script-library');
     const tabsList = document.getElementById('tabs-preview');
     const tabSelect = document.getElementById('tab-select') as HTMLSelectElement;
+
+    console.log("[BGM] Popup initialized. Popout button found:", !!popoutBtn);
 
     // Persistence: Load State
     const state = await chrome.storage.local.get(['bgm_editor', 'bgm_tab_mode']);
@@ -70,12 +72,24 @@ document.addEventListener('DOMContentLoaded', async () => {
     refreshTabs();
 
     // Popout Functionality
+    chrome.windows.getCurrent((w) => {
+        if (w.type === 'popup' && popoutBtn) {
+            popoutBtn.style.display = 'none';
+        }
+    });
+
     popoutBtn?.addEventListener('click', () => {
+        const url = window.location.href;
         chrome.windows.create({
-            url: chrome.runtime.getURL('popup.html'),
+            url: url,
             type: 'popup',
-            width: 420,
-            height: 600
+            width: 440,
+            height: 620
+        }, (win) => {
+            if (chrome.runtime.lastError || !win) {
+                console.error("Popout failed, falling back to tab:", chrome.runtime.lastError);
+                chrome.tabs.create({ url: url });
+            }
         });
     });
 
@@ -116,8 +130,41 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
+    // Tab Switching Logic
+    const bottomNavItems = document.querySelectorAll('.bottom-nav .nav-item');
+    const tabViews = document.querySelectorAll('.tab-view');
+
+    bottomNavItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const target = item.getAttribute('data-tab');
+            bottomNavItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            tabViews.forEach(v => {
+                v.classList.toggle('active', v.id === `tab-${target}`);
+            });
+        });
+    });
+
+    // Portal Actions
+    const openSettingsBtn = document.getElementById('open-settings-btn');
+    const openPopoutBtnAlt = document.getElementById('open-popout-btn-alt');
+
+    openSettingsBtn?.addEventListener('click', () => {
+        chrome.runtime.openOptionsPage();
+    });
+
+    openPopoutBtnAlt?.addEventListener('click', () => {
+        popoutBtn?.click();
+    });
+
     clearBtn?.addEventListener('click', () => {
         input.value = '';
         chrome.storage.local.set({ bgm_editor: '' });
     });
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}

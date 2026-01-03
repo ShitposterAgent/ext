@@ -35,15 +35,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     const loadScripts = async () => {
         const data = await chrome.storage.local.get(['user_scripts', 'audit_logs']);
         userScripts = data.user_scripts || [];
+        allLogs = data.audit_logs || [];
         renderScripts();
-        renderLogs(data.audit_logs || []);
+        applyLogFiltering();
 
         // Update stats
         const tabsData = await chrome.tabs.query({});
         document.getElementById('stat-tabs')!.textContent = String(tabsData.length);
         document.getElementById('stat-rules')!.textContent = String(userScripts.filter(s => s.enabled).length);
-        document.getElementById('stat-injections')!.textContent = String((data.audit_logs || []).filter((l: any) => l.type === 'injection').length);
+        document.getElementById('stat-injections')!.textContent = String(allLogs.filter((l: any) => l.type === 'injection').length);
     };
+
+    const applyLogFiltering = () => {
+        const query = auditSearch.value.toLowerCase();
+        const type = auditTypeFilter.value;
+
+        const filtered = allLogs.filter(log => {
+            const matchesType = type === 'all' ||
+                (type === 'injection' && log.success) ||
+                (type === 'error' && !log.success);
+            const matchesQuery = !query ||
+                (log.source?.toLowerCase().includes(query)) ||
+                (log.script?.toLowerCase().includes(query)) ||
+                (log.error?.toLowerCase().includes(query)) ||
+                (log.result?.toString().toLowerCase().includes(query));
+            return matchesType && matchesQuery;
+        });
+        renderLogs(filtered);
+    };
+
+    auditSearch.addEventListener('input', applyLogFiltering);
+    auditTypeFilter.addEventListener('change', applyLogFiltering);
+    clearLogsBtn?.addEventListener('click', async () => {
+        if (confirm('Delete all audit logs?')) {
+            await chrome.storage.local.set({ audit_logs: [] });
+            allLogs = [];
+            applyLogFiltering();
+        }
+    });
 
     const renderLogs = (logs: any[]) => {
         const tbody = document.getElementById('audit-tbody');

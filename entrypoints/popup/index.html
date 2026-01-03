@@ -277,6 +277,72 @@
       text-overflow: ellipsis;
       max-width: 200px;
     }
+
+    .tabs-content {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: 70px;
+      /* Space for bottom nav */
+    }
+
+    .tab-view {
+      display: none;
+      padding: 20px;
+    }
+
+    .tab-view.active {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: rgba(22, 22, 26, 0.95);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 0 10px;
+      z-index: 100;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+      flex: 1;
+      padding: 8px 0;
+    }
+
+    .nav-item:hover {
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      color: var(--accent);
+    }
+
+    .nav-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Adjust existing sections to fit in views */
+    .content {
+      padding: 0;
+    }
   </style>
 </head>
 
@@ -303,35 +369,78 @@
   </div>
 
   <div class="content">
-    <div class="section">
-      <div class="section-header">
-        <div class="section-title">Active Tabs</div>
-        <select id="tab-select" class="tab-selector">
-          <option value="active">Current Active Tab</option>
-          <option value="all">All Available Tabs</option>
-        </select>
+    <div id="tab-orchestra" class="tab-view active">
+      <div class="section">
+        <div class="section-header">
+          <div class="section-title">Active Tabs</div>
+          <select id="tab-select" class="tab-selector">
+            <option value="active">Current Active Tab</option>
+            <option value="all">All Available Tabs</option>
+          </select>
+        </div>
+        <div id="tabs-preview" class="tabs-list">
+          <!-- Live tabs here -->
+        </div>
       </div>
-      <div id="tabs-preview" class="tabs-list">
-        <!-- Live tabs here -->
+
+      <div class="section">
+        <div class="section-title">Script Editor</div>
+        <textarea id="script-input" placeholder="// Write God-Mode script here..."></textarea>
+        <div class="button-group">
+          <button id="inject-btn" class="btn-primary">Execute Protocol</button>
+          <button id="clear-btn" class="btn-secondary">Reset Console</button>
+        </div>
       </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Script Editor</div>
-      <textarea id="script-input" placeholder="// Write God-Mode script here..."></textarea>
-      <div class="button-group">
-        <button id="inject-btn" class="btn-primary">Execute Protocol</button>
-        <button id="clear-btn" class="btn-secondary">Reset Console</button>
+    <div id="tab-library" class="tab-view">
+      <div class="section">
+        <div class="section-title">Power Library</div>
+        <div id="script-library" class="script-library"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <!-- Library cards -->
+        </div>
       </div>
     </div>
 
-    <div class="section">
-      <div class="section-title">Power Library</div>
-      <div id="script-library" class="script-library">
-        <!-- Library cards -->
+    <div id="tab-portal" class="tab-view">
+      <div class="section">
+        <div class="section-title">Advanced Control</div>
+        <p style="color: var(--text-dim); font-size: 13px;">Full Command Center and Orchestration rules.</p>
+        <button id="open-settings-btn" class="btn-primary" style="width: 100%;">Open Command Center</button>
+        <button id="open-popout-btn-alt" class="btn-secondary" style="width: 100%; margin-top: 10px;">Detach
+          Interface</button>
       </div>
     </div>
   </div>
+
+  <nav class="bottom-nav">
+    <div class="nav-item active" data-tab="orchestra">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="4 17 10 11 4 5"></polyline>
+        <line x1="12" y1="19" x2="20" y2="19"></line>
+      </svg>
+      <span class="nav-label">Protocol</span>
+    </div>
+    <div class="nav-item" data-tab="library">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span class="nav-label">Vault</span>
+    </div>
+    <div class="nav-item" data-tab="portal">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+        stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path
+          d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+        </path>
+      </svg>
+      <span class="nav-label">Bridge</span>
+    </div>
+  </nav>
   <script type="module" src="./main.ts"></script>
 </body>
 
