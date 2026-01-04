@@ -1,177 +1,109 @@
 import { BGMBridge } from '../utils/bridge';
 
-interface Rule {
+interface UserScript {
   id: string;
-  pattern: string; // URL regex
-  script: string;
-  enabled: boolean;
+  content: string;
+  path: string;
+  metadata: {
+    name?: string;
+    match?: string;
+    tabs?: number[];
+    enabled: boolean;
+  };
 }
 
 export default defineBackground(() => {
   const bridge = new BGMBridge();
-  let rules: Rule[] = [];
+  let scripts = new Map<string, UserScript>();
 
-  // Load rules from storage
-  chrome.storage.local.get(['bgm_rules'], (result: { [key: string]: any }) => {
-    if (result.bgm_rules) rules = result.bgm_rules;
-  });
+  // Script parser for Headers
+  function parseMetadata(content: string): UserScript['metadata'] {
+    const meta: UserScript['metadata'] = { enabled: true };
+    const header = content.match(/\/\/ ==BGM==([\s\S]*?)\/\/ ==\/BGM==/);
+    if (!header) return meta;
+
+    const lines = header[1].split('\n');
+    for (const line of lines) {
+      const match = line.match(/@(\w+)\s+(.*)/);
+      if (match) {
+        const [, key, value] = match;
+        if (key === 'name') meta.name = value.trim();
+        if (key === 'match') meta.match = value.trim();
+        if (key === 'tabs') meta.tabs = value.split(',').map(Number);
+      }
+    }
+    return meta;
+  }
 
   bridge.onMessage(async (msg: any) => {
-    if (msg.type === 'inject') {
-      const { tabId, script } = msg;
-      if (tabId === 'all') {
-        const tabs = await chrome.tabs.query({});
-        for (const tab of tabs) {
-          if (tab.id) tryInject(tab.id, script);
-        }
-      } else {
-        tryInject(Number(tabId), script);
-      }
-    } else if (msg.type === 'navigate') {
-      const { tabId, url } = msg;
-      if (tabId === 'active') {
-        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-          if (tabs[0]?.id) chrome.tabs.update(tabs[0].id, { url });
-        });
-      } else if (tabId === 'new') {
-        chrome.tabs.create({ url });
-      } else {
-        chrome.tabs.update(Number(tabId), { url });
-      }
-    } else if (msg.type === 'open_tab') {
-      const { url } = msg;
-      chrome.tabs.create({ url: url || 'about:blank' });
-    } else if (msg.type === 'scroll') {
-      const { tabId, x, y } = msg;
-      const script = `window.scrollTo(${x || 0}, ${y || 0})`;
-      tryInject(Number(tabId), script, 'scroll');
-    } else if (msg.type === 'resize') {
-      const { width, height } = msg;
-      chrome.windows.getCurrent((win) => {
-        if (win.id) chrome.windows.update(win.id, { width, height });
+    if (msg.type === 'sync_script') {
+      const { script } = msg;
+      const metadata = parseMetadata(script.content);
+      const userScript: UserScript = { ...script, metadata };
+      scripts.set(script.id, userScript);
+
+      // Persist for UI
+      chrome.storage.local.get(['bgm_synced_scripts'], (res) => {
+        const stored = res.bgm_synced_scripts || {};
+        stored[script.id] = userScript;
+        chrome.storage.local.set({ bgm_synced_scripts: stored });
       });
-    } else if (msg.type === 'click') {
-      const { tabId, selector } = msg;
-      const script = `document.querySelector('${selector}')?.click()`;
-      tryInject(Number(tabId), script, 'click');
-    } else if (msg.type === 'type') {
-      const { tabId, selector, text } = msg;
-      const script = `
-        (function() {
-          const el = document.querySelector('${selector}');
-          if (el) {
-            el.value = '${text}';
-            el.dispatchEvent(new Event('input', { bubbles: true }));
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-          }
-        })()
-      `;
-      tryInject(Number(tabId), script, 'type');
-    } else if (msg.type === 'capture') {
-      const { tabId } = msg;
-      chrome.tabs.captureVisibleTab((dataUrl) => {
-        bridge.sendMessage({ type: 'capture_result', tabId, dataUrl });
-      });
-    } else if (msg.type === 'get_html') {
-      const { tabId } = msg;
-      const script = `document.documentElement.outerHTML`;
-      try {
-        const result = await bridge.inject(Number(tabId), script);
-        bridge.sendMessage({ type: 'html_result', tabId, html: result });
-      } catch (e: any) {
-        bridge.sendMessage({ type: 'html_result', tabId, error: e.message });
-      }
-    } else if (msg.type === 'set_rules') {
-      rules = msg.rules;
-      chrome.storage.local.set({ bgm_rules: rules });
-      console.log('[BGM] Rules updated:', rules.length);
+
+      console.log(`[BGM] Script synced: ${userScript.metadata.name || script.id}`);
+
+      // Immediate execution check
+      reRunScripts(userScript);
     }
   });
 
-  async function logAudit(type: string, details: any) {
-    const logEntry = {
-      id: Date.now().toString(),
-      timestamp: new Error().stack, // Just for time info or use new Date().toISOString()
-      time: new Date().toISOString(),
-      type,
-      ...details
-    };
+  async function reRunScripts(script?: UserScript) {
+    const tabs = await chrome.tabs.query({});
+    const scriptList = script ? [script] : Array.from(scripts.values());
 
-    chrome.storage.local.get(['audit_logs'], (result) => {
-      const logs = [logEntry, ...(result.audit_logs || [])].slice(0, 100);
-      chrome.storage.local.set({ audit_logs: logs });
-    });
+    for (const tab of tabs) {
+      if (!tab.id || !tab.url) continue;
 
-    // Also notify controller
-    bridge.sendMessage({ type: 'audit_log', log: logEntry });
-  }
+      for (const s of scriptList) {
+        let shouldInject = false;
 
-  async function tryInject(tabId: number, script: string, source: string = 'remote') {
-    try {
-      const result = await bridge.inject(tabId, script);
-      await logAudit('injection', { tabId, script: script.substring(0, 100), result, source, success: true });
-      bridge.sendMessage({ type: 'injection_result', tabId, success: true, result });
-    } catch (e: any) {
-      console.error(`[BGM] Injection failed for tab ${tabId}:`, e);
-      await logAudit('injection', { tabId, script: script.substring(0, 100), error: e.message, source, success: false });
-      bridge.sendMessage({ type: 'injection_result', tabId, success: false, error: e.message });
+        // Match by pattern
+        if (s.metadata.match) {
+          const regex = new RegExp(s.metadata.match.replace(/\*/g, '.*'));
+          if (regex.test(tab.url)) shouldInject = true;
+        }
+
+        // Match by explicit IDs
+        if (s.metadata.tabs && s.metadata.tabs.includes(tab.id)) {
+          shouldInject = true;
+        }
+
+        if (shouldInject) {
+          console.log(`[BGM] Injecting ${s.id} into tab ${tab.id}`);
+          chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            world: 'MAIN', // Run in page context for full control
+            func: (code) => {
+              // Create a unique container/script tag to avoid collisions and allow cleanup
+              const id = `bgm-script-${Date.now()}`;
+              const scriptEl = document.createElement('script');
+              scriptEl.id = id;
+              scriptEl.textContent = `(function() { ${code} \n})();`;
+              document.documentElement.appendChild(scriptEl);
+              scriptEl.remove(); // Cleanup DOM but script stays running
+            },
+            args: [s.content]
+          }).catch(e => console.error(`[BGM] Failed to inject ${s.id}:`, e));
+        }
+      }
     }
   }
 
-  // Auto-injection based on rules
-  chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    if (changeInfo.status === 'complete' && tab.url) {
-      for (const rule of rules) {
-        if (rule.enabled && new RegExp(rule.pattern).test(tab.url)) {
-          console.log(`[BGM] Auto-injecting rule ${rule.id} into ${tab.url}`);
-          tryInject(tabId, rule.script, `rule:${rule.id}`);
-        }
-      }
+  // Auto-re-inject on navigation
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status === 'complete') {
+      reRunScripts();
     }
     updateTabs();
-  });
-
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'inject-request') {
-      tryInject(message.tabId, message.script, 'popup')
-        .then((result) => sendResponse({ success: true, result }))
-        .catch((err) => sendResponse({ success: false, error: err.message }));
-      return true;
-    } else if (message.type === 'update-rules-broadcast') {
-      chrome.storage.local.get(['bgm_rules'], (result: any) => {
-        if (result.bgm_rules) {
-          rules = result.bgm_rules;
-          bridge.sendMessage({ type: 'set_rules', rules: rules });
-        }
-      });
-    } else if (message.type === 'api-reconnect-trigger') {
-      chrome.storage.local.get(['bgm_api_port'], (res: any) => {
-        if (res.bgm_api_port) {
-          bridge.setPort(Number(res.bgm_api_port));
-        }
-      });
-    }
-  });
-
-  // Track connection status and command log
-  const updateAPIState = () => {
-    chrome.storage.local.set({
-      bgm_api_connected: bridge.isConnected()
-    });
-  };
-
-  setInterval(updateAPIState, 2000);
-
-  async function logCommand(type: string, details: any) {
-    chrome.storage.local.get(['bgm_last_commands'], (res: any) => {
-      const logs = [{ type, time: Date.now(), ...details }, ...(res.bgm_last_commands || [])].slice(0, 5);
-      chrome.storage.local.set({ bgm_last_commands: logs });
-    });
-  }
-
-  const originalOnMessage = bridge.onMessage;
-  bridge.onMessage((msg: any) => {
-    logCommand(msg.type, { ...msg });
   });
 
   const updateTabs = async () => {
@@ -182,10 +114,16 @@ export default defineBackground(() => {
     });
   };
 
+  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'api-reconnect-trigger') {
+      chrome.storage.local.get(['bgm_api_port'], (res: any) => {
+        if (res.bgm_api_port) bridge.setPort(Number(res.bgm_api_port));
+      });
+    }
+  });
+
   chrome.tabs.onCreated.addListener(updateTabs);
   chrome.tabs.onRemoved.addListener(updateTabs);
 
-  // Initial tab broadcast and periodic heartbeat
-  setTimeout(updateTabs, 2000);
-  setInterval(updateTabs, 30000);
+  setInterval(updateTabs, 10000);
 });

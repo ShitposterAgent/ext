@@ -95,11 +95,31 @@ class BGMApp {
 
     private watchState() {
         const update = () => {
-            chrome.storage.local.get(['bgm_api_connected', 'bgm_api_port', 'bgm_last_commands'], (res) => {
+            chrome.storage.local.get(['bgm_api_connected', 'bgm_api_port', 'bgm_last_commands', 'bgm_synced_scripts'], (res) => {
+                // Render Synced Scripts
+                const scriptList = document.getElementById('synced-scripts-list');
+                if (scriptList && res.bgm_synced_scripts) {
+                    const scripts = Object.values(res.bgm_synced_scripts) as any[];
+                    if (scripts.length > 0) {
+                        scriptList.innerHTML = scripts.map(s => `
+                            <div class="script-item view-animate">
+                                <div class="script-item-header">
+                                    <span class="script-name">${s.metadata.name || s.id}</span>
+                                    <span class="script-tag">LIVE</span>
+                                </div>
+                                <div class="script-meta">${s.path}</div>
+                                ${s.metadata.match ? `<div class="script-meta" style="color:var(--accent)">MATCH: ${s.metadata.match}</div>` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        scriptList.innerHTML = '<div class="empty-state">No scripts synced from Brain.</div>';
+                    }
+                }
+
                 // Global sidebar status
                 const globalStatus = document.getElementById('global-status');
                 if (globalStatus) {
-                    globalStatus.innerText = res.bgm_api_connected ? 'LINKED' : 'UNLINKED';
+                    globalStatus.innerText = res.bgm_api_connected ? 'SYNCING' : 'OFFLINE';
                     const dot = globalStatus.previousElementSibling as HTMLElement;
                     if (dot) dot.style.background = res.bgm_api_connected ? '#10b981' : '#ef4444';
                 }
