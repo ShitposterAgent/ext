@@ -82,16 +82,34 @@ export default defineBackground(() => {
           chrome.scripting.executeScript({
             target: { tabId: tab.id },
             world: 'MAIN', // Run in page context for full control
-            func: (code) => {
-              // Create a unique container/script tag to avoid collisions and allow cleanup
-              const id = `bgm-script-${Date.now()}`;
+            func: (code: string, scriptId: string) => {
+              // The God-Mode SDK
+              const win = window as any;
+              if (!win.bgm) {
+                win.bgm = {
+                  id: scriptId,
+                  emit: (type: string, payload: any) => {
+                    window.postMessage({ source: 'bgm-sdk', type, payload, scriptId }, '*');
+                  },
+                  log: (msg: string) => {
+                    window.postMessage({ source: 'bgm-sdk', type: 'log', payload: msg, scriptId }, '*');
+                  },
+                  delay: (ms: number) => new Promise(resolve => setTimeout(resolve, ms)),
+                };
+                console.log("%c[BGM SDK] Initialized", "color: #6366f1; font-weight: bold;");
+              }
+
+              const id = `bgm-script-${scriptId}-${Date.now()}`;
               const scriptEl = document.createElement('script');
               scriptEl.id = id;
-              scriptEl.textContent = `(function() { ${code} \n})();`;
+              scriptEl.textContent = `(function() { 
+                const bgm = (window as any).bgm;
+                ${code} 
+              })();`;
               document.documentElement.appendChild(scriptEl);
-              scriptEl.remove(); // Cleanup DOM but script stays running
+              scriptEl.remove();
             },
-            args: [s.content]
+            args: [s.content, s.id]
           }).catch(e => console.error(`[BGM] Failed to inject ${s.id}:`, e));
         }
       }
@@ -99,7 +117,7 @@ export default defineBackground(() => {
   }
 
   // Auto-re-inject on navigation
-  chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  chrome.tabs.onUpdated.addListener((_tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
     if (changeInfo.status === 'complete') {
       reRunScripts();
     }
@@ -110,14 +128,24 @@ export default defineBackground(() => {
     const tabs = await chrome.tabs.query({});
     bridge.sendMessage({
       type: 'tabs',
-      tabs: tabs.map(t => ({ id: t.id, url: t.url, title: t.title }))
+      tabs: tabs.map((t: chrome.tabs.Tab) => ({ id: t.id, url: t.url, title: t.title }))
     });
   };
 
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((message: any, sender: chrome.runtime.MessageSender) => {
     if (message.type === 'api-reconnect-trigger') {
       chrome.storage.local.get(['bgm_api_port'], (res: any) => {
         if (res.bgm_api_port) bridge.setPort(Number(res.bgm_api_port));
+      });
+    }
+
+    if (message.type === 'sdk-relay') {
+      const { data } = message;
+      bridge.sendMessage({
+        type: 'sdk_event',
+        tabId: sender.tab?.id,
+        tabUrl: sender.tab?.url,
+        ...data
       });
     }
   });
